@@ -1,0 +1,8 @@
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+Packages/
+ServerPackages/
+DevPackages/
+.DS_Store
+Thumbs.db
