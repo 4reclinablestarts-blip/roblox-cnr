@@ -9,6 +9,14 @@
       },
       "Shared": {
         "$path": "src/shared"
+      },
+      "Remotes": {
+        "$className": "Folder",
+        "MaskUp": { "$className": "RemoteEvent" },
+        "TakeItem": { "$className": "RemoteEvent" },
+        "OpenStash": { "$className": "RemoteEvent" },
+        "InventoryChanged": { "$className": "RemoteEvent" },
+        "Notify": { "$className": "RemoteEvent" }
       }
     },
 
