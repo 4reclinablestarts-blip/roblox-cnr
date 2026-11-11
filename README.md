@@ -9,6 +9,7 @@ Created in [T3 Code](https://t3.codes).
 1. Install [Rokit](https://github.com/rojo-rbx/rokit), then run `rokit install` (Rojo, Wally, Selene, StyLua).
 2. `wally install` to fetch packages into `Packages/`.
 3. `rojo plugin install` for the Studio plugin, and install the VS Code extensions recommended in `.vscode/`.
+   If it fails with "os error 2", create `%LOCALAPPDATA%\Roblox\Plugins` first and run it again.
 
 ## Develop
 
