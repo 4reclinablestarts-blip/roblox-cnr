@@ -6,3 +6,5 @@ ServerPackages/
 DevPackages/
 .DS_Store
 Thumbs.db
+*.rbxl
+*.rbxlx
