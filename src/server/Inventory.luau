@@ -25,6 +25,22 @@ function Inventory.add(player: Player, itemId: string): boolean
 	return true
 end
 
+function Inventory.hasRoom(player: Player): boolean
+	local list = items[player]
+	return list ~= nil and #list < Config.BAG_SLOTS
+end
+
+-- Removes the item at `index` only if it is still `itemId` (the client's view can be stale).
+function Inventory.remove(player: Player, index: number, itemId: string): boolean
+	local list = items[player]
+	if not list or list[index] ~= itemId then
+		return false
+	end
+	table.remove(list, index)
+	sync(player)
+	return true
+end
+
 -- Going on duty: the personal bag is put away and replaced by the police kit.
 function Inventory.lockAway(player: Player, kit: { string })
 	lockedAway[player] = items[player]
@@ -42,6 +58,7 @@ end
 function Inventory.start()
 	local function onJoin(player: Player)
 		items[player] = table.clone(Config.STARTING_ITEMS)
+		player:SetAttribute("Cash", 0)
 		sync(player)
 	end
 	Players.PlayerAdded:Connect(onJoin)

@@ -64,5 +64,20 @@ return function()
 		block(folder, "Police desk", Vector3.new(6, 3, 3), Vector3.new(-40, 1.5, 0), Color3.fromRGB(40, 70, 160))
 	CollectionService:AddTag(desk, "PoliceDesk")
 
+	local sell =
+		block(folder, "Sell station", Vector3.new(5, 4, 3), Vector3.new(0, 2, -30), Color3.fromRGB(40, 150, 70))
+	CollectionService:AddTag(sell, "SellStation")
+
+	for _, item in
+		{
+			{ "TV", Vector3.new(4, 3, 1), Vector3.new(48, 2.5, 0) },
+			{ "Plant", Vector3.new(1, 3, 1), Vector3.new(32, 2.5, 0) },
+		}
+	do
+		local part = block(folder, item[1], item[2], item[3], Color3.fromRGB(200, 120, 200))
+		part:SetAttribute("ItemId", item[1])
+		CollectionService:AddTag(part, "WorldItem")
+	end
+
 	folder.Parent = workspace
 end

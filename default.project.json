@@ -14,6 +14,8 @@
         "$className": "Folder",
         "MaskUp": { "$className": "RemoteEvent" },
         "TakeItem": { "$className": "RemoteEvent" },
+        "PutItem": { "$className": "RemoteEvent" },
+        "GiveItem": { "$className": "RemoteEvent" },
         "OpenStash": { "$className": "RemoteEvent" },
         "InventoryChanged": { "$className": "RemoteEvent" },
         "Notify": { "$className": "RemoteEvent" }

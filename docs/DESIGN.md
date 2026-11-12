@@ -129,8 +129,8 @@ Until the map exists, mechanics are tested on placeholder parts in a
 `Workspace.Placeholder` folder that the map session can delete.
 
 1. Looty Bay in Studio: roles, police desk (cap 5, off duty), mask up, lootables → stash UI → slot inventory, criminal level.
-2. Sell stations, cash, world items, give item, cameras/witnesses → police alerts.
-3. Combat rules, downed/surrender/arrest/confiscation, death bags, wanted, border exit.
+2. Cash, sell stations, world items (TV, plant), give item.
+3. Combat rules, downed/surrender/arrest/confiscation, death bags, wanted, border exit, cameras/witnesses → police alerts (needs guns for hold-ups and shooting cameras).
 4. Motel hub: safe zone, stash, rental car, exit border → world map → matchmaking → teleport, 1-hour end.
 5. Parties + skill-based matchmaking.
 6. Tech tree shop, owned cars, car recall/lockpick.

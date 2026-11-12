@@ -1,4 +1,6 @@
--- Bag panel plus the open stash panel. Drag a stash item onto the bag to take it.
+-- Bag panel plus the open stash panel. Drag a stash item onto the bag to take it,
+-- drag a bag item onto a sell station to sell it, right-click a bag item to give it away.
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -57,7 +59,8 @@ local openStash: BasePart? = nil
 local function itemButton(list: ScrollingFrame, index: number, itemId: string): TextButton
 	local button = Instance.new("TextButton")
 	button.LayoutOrder = index
-	button.Text = Config.Items[itemId] and Config.Items[itemId].name or itemId
+	local item = Config.Items[itemId]
+	button.Text = item and (item.value > 0 and `{item.name}\n${item.value}` or item.name) or itemId
 	button.TextWrapped = true
 	button.TextSize = 12
 	button.TextColor3 = Color3.new(1, 1, 1)
@@ -83,9 +86,9 @@ local function isOver(frame: GuiObject, position: Vector2): boolean
 		and position.Y <= topLeft.Y + size.Y
 end
 
--- A copy of the button follows the pointer; dropping it on the bag panel takes the item.
+-- A copy of the button follows the pointer; dropping it on `target` calls onDrop.
 -- InputObject.Position and AbsolutePosition both exclude the top bar inset, so they compare directly.
-local function startDrag(button: TextButton, input: InputObject, onDrop: () -> ())
+local function startDrag(button: TextButton, input: InputObject, target: GuiObject, onDrop: () -> ())
 	local ghost = button:Clone()
 	ghost.AnchorPoint = Vector2.new(0.5, 0.5)
 	ghost.Size = UDim2.fromOffset(button.AbsoluteSize.X, button.AbsoluteSize.Y)
@@ -112,30 +115,112 @@ local function startDrag(button: TextButton, input: InputObject, onDrop: () -> (
 		moved:Disconnect()
 		ended:Disconnect()
 		ghost:Destroy()
-		if isOver(bagFrame, Vector2.new(release.Position.X, release.Position.Y)) then
+		if isOver(target, Vector2.new(release.Position.X, release.Position.Y)) then
 			onDrop()
 		end
 	end)
+end
+
+local giveMenu: Frame? = nil
+
+local function closeGiveMenu()
+	if giveMenu then
+		giveMenu:Destroy()
+		giveMenu = nil
+	end
 end
 
 local function closeStash()
 	openStash = nil
 	stashFrame.Visible = false
 	bagFrame.Visible = false
+	closeGiveMenu()
+end
+
+local function menuButton(menu: Frame, text: string, onClick: () -> ())
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1, 0, 0, 28)
+	button.Text = text
+	button.TextSize = 13
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+	button.Activated:Connect(function()
+		closeGiveMenu()
+		onClick()
+	end)
+	button.Parent = menu
+end
+
+-- shortcut: right-click only, so touch players can't give yet; add a long-press when mobile matters.
+local function openGiveMenu(button: TextButton, index: number, itemId: string)
+	closeGiveMenu()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+
+	local menu = Instance.new("Frame")
+	menu.Position = UDim2.fromOffset(button.AbsolutePosition.X + button.AbsoluteSize.X, button.AbsolutePosition.Y)
+	menu.Size = UDim2.fromOffset(160, 0)
+	menu.AutomaticSize = Enum.AutomaticSize.Y
+	menu.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	menu.ZIndex = 5
+	local layout = Instance.new("UIListLayout")
+	layout.Parent = menu
+
+	local found = false
+	for _, other in Players:GetPlayers() do
+		local otherRoot = other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart")
+		if otherRoot and (otherRoot.Position - root.Position).Magnitude <= Config.GIVE_RANGE then
+			found = true
+			menuButton(menu, `Give to {other.DisplayName}`, function()
+				Remotes.GiveItem:FireServer(other, index, itemId)
+			end)
+		end
+	end
+	if not found then
+		menuButton(menu, "Nobody close enough", function() end)
+	end
+	menuButton(menu, "Cancel", function() end)
+
+	menu.Parent = gui
+	giveMenu = menu
 end
 
 Remotes.InventoryChanged.OnClientEvent:Connect(function(items: { string }, slots: number)
 	clear(bagList)
+	closeGiveMenu()
 	bagTitle.Text = `Bag {#items}/{slots}`
 	for i, itemId in items do
-		itemButton(bagList, i, itemId)
+		local button = itemButton(bagList, i, itemId)
+		button.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton2 then
+				openGiveMenu(button, i, itemId)
+			elseif
+				(
+					input.UserInputType == Enum.UserInputType.MouseButton1
+					or input.UserInputType == Enum.UserInputType.Touch
+				)
+				and openStash
+				and CollectionService:HasTag(openStash, "SellStation")
+			then
+				local station = openStash
+				startDrag(button, input, stashFrame, function()
+					Remotes.PutItem:FireServer(station, i, itemId)
+				end)
+			end
+		end)
 	end
 end)
 
 Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { string })
 	openStash = part
 	clear(stashList)
-	stashTitle.Text = #items > 0 and part.Name or `{part.Name} (empty)`
+	if CollectionService:HasTag(part, "SellStation") then
+		stashTitle.Text = "Drag items here to sell"
+	else
+		stashTitle.Text = #items > 0 and part.Name or `{part.Name} (empty)`
+	end
 	for i, itemId in items do
 		local button = itemButton(stashList, i, itemId)
 		button.InputBegan:Connect(function(input)
@@ -143,7 +228,7 @@ Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { string
 				input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch
 			then
-				startDrag(button, input, function()
+				startDrag(button, input, bagFrame, function()
 					Remotes.TakeItem:FireServer(part, i, itemId)
 				end)
 			end

@@ -61,7 +61,7 @@ local function updateStatus()
 	if player:GetAttribute("Masked") then
 		text ..= " · Masked"
 	end
-	status.Text = text
+	status.Text = `{text} · ${player:GetAttribute("Cash") or 0}`
 	status.TextColor3 = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
 end
 

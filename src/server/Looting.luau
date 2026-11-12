@@ -1,7 +1,9 @@
 -- Lootables: parts tagged "Lootable" with a LootTable attribute (and optional HoldTime).
 -- Searching one opens it as a stash; the client drags items out with TakeItem.
+-- World items: parts tagged "WorldItem" with an ItemId attribute, picked up whole (a TV, a plant).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Inventory = require(script.Parent.Inventory)
@@ -22,10 +24,11 @@ local function roll(part: BasePart): { string }
 	return out
 end
 
-local function inRange(player: Player, part: BasePart): boolean
+function Looting.inRange(player: Player, part: BasePart): boolean
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	return root ~= nil and (root.Position - part.Position).Magnitude <= Config.LOOT_RANGE
 end
+local inRange = Looting.inRange
 
 local function canRob(player: Player): boolean
 	if Roles.isPolice(player) then
@@ -42,6 +45,9 @@ local function addCriminalProgress(player: Player)
 end
 
 local function setup(part: BasePart)
+	if contents[part] then
+		return
+	end
 	contents[part] = roll(part)
 
 	local prompt = Instance.new("ProximityPrompt")
@@ -60,10 +66,48 @@ local function setup(part: BasePart)
 	prompt.Parent = part
 end
 
+local worldItems: { [BasePart]: boolean } = {}
+
+local function setupWorldItem(part: BasePart)
+	-- Taken items are parked in ServerStorage and put back, which fires the added signal again.
+	if worldItems[part] then
+		return
+	end
+	worldItems[part] = true
+	local itemId = part:GetAttribute("ItemId")
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = `Take {Config.Items[itemId].name}`
+	prompt.HoldDuration = part:GetAttribute("HoldTime") or 2
+	prompt.RequiresLineOfSight = false
+	prompt.Triggered:Connect(function(player)
+		if not canRob(player) or not inRange(player, part) or part.Parent == ServerStorage then
+			return
+		end
+		if not Inventory.add(player, itemId) then
+			Remotes.Notify:FireClient(player, "Your bag is full.")
+			return
+		end
+		Roles.makeCriminal(player)
+		addCriminalProgress(player)
+
+		local home = part.Parent
+		part.Parent = ServerStorage
+		task.delay(Config.LOOT_RESET, function()
+			part.Parent = home
+		end)
+	end)
+	prompt.Parent = part
+end
+
 function Looting.start()
 	CollectionService:GetInstanceAddedSignal("Lootable"):Connect(setup)
 	for _, part in CollectionService:GetTagged("Lootable") do
 		setup(part)
+	end
+	CollectionService:GetInstanceAddedSignal("WorldItem"):Connect(setupWorldItem)
+	for _, part in CollectionService:GetTagged("WorldItem") do
+		setupWorldItem(part)
 	end
 
 	Remotes.TakeItem.OnServerEvent:Connect(function(player, part, index, itemId)

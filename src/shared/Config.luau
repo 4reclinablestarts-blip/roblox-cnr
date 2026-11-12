@@ -21,6 +21,8 @@ return {
 
 	LOOT_RANGE = 12, -- studs; server rejects stash use from further away
 	LOOT_RESET = 180, -- seconds after the first item is taken
+	SELL_BONUS_PER_LEVEL = 0.05, -- criminal level 5 sells for +25%
+	GIVE_RANGE = 10, -- studs between players to give an item
 
 	Items = {
 		StarterPistol = { name = "Starter Pistol", value = 0 },
@@ -35,6 +37,8 @@ return {
 		Phone = { name = "Phone", value = 120 },
 		Snacks = { name = "Snacks", value = 5 },
 		Cigarettes = { name = "Cigarettes", value = 15 },
+		TV = { name = "TV", value = 300 },
+		Plant = { name = "Plant", value = 40 },
 	},
 
 	-- Each lootable rolls `count` picks from `items` when it fills.
