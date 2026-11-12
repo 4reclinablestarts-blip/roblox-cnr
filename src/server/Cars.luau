@@ -18,8 +18,6 @@ local Remotes = ReplicatedStorage.Remotes
 
 local Cars = {}
 
-Cars.raidCode = nil :: string? -- set by Raid once this raid server knows its access code
-
 type Car = { model: Model, carId: string, ownerId: number, trunk: { any }, granted: { [Player]: boolean } }
 
 local cars: { [number]: Car } = {} -- by owner UserId; one car per player per server
@@ -201,7 +199,7 @@ function Cars.spawn(player: Player, carId: string, cframe: CFrame): Car?
 	-- In a raid the trunk lives in the car until it leaves again (or is recalled).
 	if Places.kind == "Raid" then
 		saved.trunk = {}
-		saved.deployedIn = Cars.raidCode or "studio"
+		saved.deployedIn = Places.code or "studio"
 	end
 	trunkPrompt(car)
 	car.model.Parent = workspace
@@ -299,7 +297,7 @@ function Cars.start()
 		pcall(function()
 			MessagingService:SubscribeAsync("CarRecall", function(message)
 				local car = cars[message.Data.userId]
-				if car and message.Data.code == Cars.raidCode then
+				if car and message.Data.code == Places.code then
 					Looting.dropBag((car.model.PrimaryPart :: BasePart).Position, car.trunk)
 					despawn(car)
 				end

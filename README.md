@@ -13,8 +13,10 @@ Created in [T3 Code](https://t3.codes).
 
 ## Develop
 
-The experience has four places built from the same code. Each `*.project.json` sets
-Workspace's `PlaceKind` attribute, which picks what the server runs:
+The whole game is ONE Roblox place. Each server works out what it is when it starts
+(public servers are the Motel; raids, the Sales Center and neighbourhoods are reserved servers
+that learn their kind from the arriving players). In Studio, each `*.project.json` sets
+Workspace's `PlaceKind` attribute so you can test one kind at a time:
 
 | Project | Place |
 |---|---|
@@ -28,13 +30,13 @@ Workspace's `PlaceKind` attribute, which picks what the server runs:
 - `selene src` to lint, `stylua src` to format.
 - `rojo build hub.project.json -o hub.rbxl` to build a place file.
 
-### Publishing (needed for travel between places)
+### Publishing
 
-1. Publish the Motel as the experience's start place, then add the other three places to the
-   same experience (Asset Manager > Places > Add New Place) and publish each one.
-2. Put the four place IDs in `Config.PlaceIds` (`src/shared/Config.luau`).
-3. In Game Settings > Security, turn on Studio Access to API Services (for saving in Studio).
-4. Set Max Players: Looty Bay 25, Motel and Sales Center as you like, Neighbourhoods ~16.
+1. `rojo build hub.project.json -o game.rbxl`, open `game.rbxl` in Studio.
+2. File > Publish to Roblox > Create new experience. That's it: travel, saving and matchmaking
+   work in the published game (travel never works inside Studio).
+3. Optional: Game Settings > Security > Studio Access to API Services, to save data while
+   testing in Studio.
+4. To update later: rebuild `game.rbxl`, open it, File > Publish to Roblox (same experience).
 
-Until then (and always in Studio) travel falls back to staying in the current place,
-and player data only saves if API access is on.
+Real maps go in `ServerStorage.Maps.<Hub|Raid|Sales|Housing>`; they replace the placeholders.

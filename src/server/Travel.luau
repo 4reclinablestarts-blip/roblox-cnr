@@ -46,9 +46,9 @@ local function go(player: Player, destination: string, arg: any): boolean
 			return false
 		end
 		local players, partyId = Party.travellers(player)
-		return Matchmaking.join(players, partyId)
+		return Matchmaking.join(players, "Raid", partyId)
 	elseif destination == "SalesCenter" then
-		return Places.teleport({ player }, "Sales", { car = car })
+		return Matchmaking.join({ player }, "Sales")
 	elseif destination == "Home" then
 		return Neighbourhoods.goHome(player)
 	elseif destination == "Visit" and type(arg) == "string" then
@@ -74,11 +74,8 @@ local function onTravel(player: Player, destination: any, arg: any)
 	if reason == "raidEnd" and destination ~= "Motel" and destination ~= "Home" then
 		return
 	end
-	if not go(player, destination, arg) and not Places.canTeleport("Hub") then
-		Remotes.Notify:FireClient(
-			player,
-			"Travel needs the published game (fill in Config.PlaceIds). Staying here for testing."
-		)
+	if not go(player, destination, arg) and not Places.canTeleport() then
+		Remotes.Notify:FireClient(player, "Travel only works in the published game. Staying here for testing.")
 		stay(player)
 	end
 end

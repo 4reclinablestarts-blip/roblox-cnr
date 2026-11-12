@@ -1,14 +1,5 @@
 -- Tunable game rules. See docs/DESIGN.md.
 return {
-	-- Fill these in after publishing each place (Create > experience, then add the places).
-	-- While a value is 0 (or in Studio), travel falls back to a stub that keeps you in the current place.
-	PlaceIds = {
-		Hub = 0, -- Motel (start place)
-		Raid = 0, -- Looty Bay
-		Sales = 0, -- Sales Center
-		Housing = 0, -- neighbourhoods
-	},
-
 	Teams = {
 		Civilian = BrickColor.new("Medium stone grey"),
 		Criminal = BrickColor.new("Bright red"),
@@ -17,6 +8,7 @@ return {
 
 	MAX_COPS = 5,
 	RAID_MAX_PLAYERS = 25,
+	SALES_MAX_PLAYERS = 30,
 	RAID_DURATION = 3600,
 	RAID_JOIN_CUTOFF = 600, -- matchmaking stops sending players this many seconds before the raid ends
 	MAP_CHOICE_TIME = 60, -- seconds to pick a destination after a raid ends before you're sent to the Motel

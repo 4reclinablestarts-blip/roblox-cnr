@@ -1,5 +1,8 @@
--- One codebase for every place; Workspace's PlaceKind attribute (set in each *.project.json) picks what runs.
+-- The whole game is one place; each server works out what it is (Places.resolveKind) and
+-- starts only what that kind needs: Hub = Lenny's Motel, Raid = Looty Bay, Sales = Sales Center,
+-- Housing = a neighbourhood.
 local Places = require(script.Places)
+Places.resolveKind()
 local kind = Places.kind
 
 require(script.Placeholder)(kind)
@@ -25,6 +28,8 @@ if kind == "Raid" then
 	require(script.Justice).start()
 	require(script.Detection).start()
 	require(script.Raid).start()
+elseif kind == "Sales" then
+	require(script.Matchmaking).advertise()
 elseif kind == "Housing" then
 	require(script.Housing).start()
 end

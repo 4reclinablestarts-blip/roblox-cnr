@@ -6,7 +6,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Cars = require(script.Parent.Cars)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Inventory = require(script.Parent.Inventory)
 local Matchmaking = require(script.Parent.Matchmaking)
@@ -17,9 +16,6 @@ local Travel = require(script.Parent.Travel)
 local Remotes = ReplicatedStorage.Remotes
 
 local Raid = {}
-
-Raid.code = nil :: string? -- this raid's reserved server access code
-Raid.startedAt = os.time()
 
 local leaving: { [Player]: boolean } = {}
 
@@ -35,8 +31,8 @@ function Raid.leave(player: Player, reason: string, keepItems: boolean, how: str
 	end)
 
 	local data = PlayerData.get(player)
-	if data and Raid.code and not table.find(data.leftRaids, Raid.code) then
-		table.insert(data.leftRaids, Raid.code)
+	if data and Places.code and not table.find(data.leftRaids, Places.code) then
+		table.insert(data.leftRaids, Places.code)
 		if #data.leftRaids > 30 then
 			table.remove(data.leftRaids, 1)
 		end
@@ -85,37 +81,8 @@ local function setupBorder(part: BasePart)
 	end)
 end
 
--- Keeps this server listed for matchmaking: player count, cops and average gear value.
-local function advertise()
-	while Raid.code do
-		local players = Players:GetPlayers()
-		local cops, skill = 0, 0
-		for _, player in players do
-			if Roles.isPolice(player) then
-				cops += 1
-			end
-			skill += Inventory.value(Inventory.get(player))
-		end
-		pcall(function()
-			Matchmaking.raids:SetAsync(Raid.code, {
-				players = #players,
-				cops = cops,
-				skill = skill / math.max(1, #players),
-				startedAt = Raid.startedAt,
-			}, 60)
-		end)
-		task.wait(15)
-	end
-end
-
 local function endRaid()
-	local code = Raid.code
-	Raid.code = nil -- stops advertising
-	if code then
-		pcall(function()
-			Matchmaking.raids:RemoveAsync(code)
-		end)
-	end
+	Matchmaking.stopAdvertising()
 	for _, player in Players:GetPlayers() do
 		Raid.leave(player, "The raid is over.", true, "raidEnd")
 	end
@@ -132,16 +99,11 @@ function Raid.start()
 		setupBorder(part)
 	end
 
+	-- Parties arrive together; their members can't hurt each other (see Combat.allowed).
 	local function onJoin(player: Player)
-		local joinData = Places.joinData(player)
-		-- The reserved server doesn't know its own access code; the first arrival brings it.
-		if not Raid.code and type(joinData.accessCode) == "string" then
-			Raid.code = joinData.accessCode
-			Cars.raidCode = joinData.accessCode
-			task.spawn(advertise)
-		end
-		if joinData.party then
-			player:SetAttribute("PartyId", joinData.party)
+		local party = Places.joinData(player).party
+		if party then
+			player:SetAttribute("PartyId", party)
 		end
 	end
 	Players.PlayerAdded:Connect(onJoin)
@@ -149,6 +111,7 @@ function Raid.start()
 		onJoin(player)
 	end
 
+	Matchmaking.advertise()
 	task.delay(Config.RAID_DURATION, endRaid)
 end
 

@@ -95,6 +95,7 @@ end
 
 player:GetPropertyChangedSignal("Team"):Connect(updateStatus)
 player.AttributeChanged:Connect(updateStatus)
+workspace:GetAttributeChangedSignal("PlaceKind"):Connect(updateStatus)
 updateStatus()
 
 local noticeId = 0

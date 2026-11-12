@@ -112,6 +112,13 @@ return function(kind: string)
 	if workspace:FindFirstChild("Placeholder") then
 		return
 	end
+	-- Real maps go in ServerStorage.Maps.<kind> (Hub, Raid, Sales, Housing) and replace these placeholders.
+	local maps = game:GetService("ServerStorage"):FindFirstChild("Maps")
+	local map = maps and maps:FindFirstChild(kind)
+	if map then
+		map:Clone().Parent = workspace
+		return
+	end
 	local folder = Instance.new("Folder")
 	folder.Name = "Placeholder"
 

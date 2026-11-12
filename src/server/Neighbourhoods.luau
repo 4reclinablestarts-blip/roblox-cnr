@@ -63,7 +63,7 @@ function Neighbourhoods.buyPlot(player: Player, districtName: string)
 		return
 	end
 	-- Reserve first: UpdateAsync's callback can't yield. An unused code costs nothing.
-	local spareCode = Places.reserve("Housing")
+	local spareCode = Places.reserve()
 	if not spareCode or not store then
 		notify(player, "Homes need the published game.")
 		return

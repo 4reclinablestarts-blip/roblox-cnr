@@ -237,12 +237,18 @@ function Combat.start()
 				task.defer(Combat.refreshTools, player)
 			end
 		end)
-		player.CharacterAdded:Connect(function(character)
+		local function onCharacter(character: Model)
 			local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 			humanoid.Died:Connect(function()
 				onDied(player, character)
 			end)
-		end)
+			Combat.refreshTools(player)
+		end
+		player.CharacterAdded:Connect(onCharacter)
+		-- The first player of a reserved server spawns before the server knows what it is.
+		if player.Character then
+			task.spawn(onCharacter, player.Character)
+		end
 	end
 	Players.PlayerAdded:Connect(onJoin)
 	for _, player in Players:GetPlayers() do
