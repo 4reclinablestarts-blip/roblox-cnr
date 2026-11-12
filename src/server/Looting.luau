@@ -46,12 +46,7 @@ local function addCriminalProgress(player: Player)
 	player:SetAttribute("CriminalLevel", math.min(Config.MAX_CRIMINAL_LEVEL, looted // Config.ITEMS_PER_CRIMINAL_LEVEL))
 end
 
-local function setup(part: BasePart)
-	if contents[part] then
-		return
-	end
-	contents[part] = roll(part)
-
+local function addSearchPrompt(part: BasePart)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Search"
 	prompt.ObjectText = part.Name
@@ -66,6 +61,37 @@ local function setup(part: BasePart)
 		Remotes.OpenStash:FireClient(player, part, contents[part])
 	end)
 	prompt.Parent = part
+end
+
+local function setup(part: BasePart)
+	if contents[part] then
+		return
+	end
+	contents[part] = roll(part)
+	addSearchPrompt(part)
+end
+
+-- A lootable bag holding a dead player's items. It never refills and disappears after a while.
+function Looting.dropBag(position: Vector3, items: { Inventory.Entry })
+	if #items == 0 then
+		return
+	end
+	local bag = Instance.new("Part")
+	bag.Name = "Bag"
+	bag.Size = Vector3.new(2, 1.5, 2)
+	bag.Color = Color3.fromRGB(70, 55, 40)
+	bag.Position = position
+	bag.CanCollide = false
+	bag.Anchored = true
+	contents[bag] = items
+	resetting[bag] = true
+	addSearchPrompt(bag)
+	bag.Parent = workspace
+	task.delay(Config.DEATH_BAG_LIFETIME, function()
+		contents[bag] = nil
+		resetting[bag] = nil
+		bag:Destroy()
+	end)
 end
 
 local worldItems: { [BasePart]: boolean } = {}

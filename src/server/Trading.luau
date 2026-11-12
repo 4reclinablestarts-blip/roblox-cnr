@@ -69,7 +69,9 @@ function Trading.start()
 			return
 		end
 		-- Selling frees the item's slot, so the cash always fits.
-		if Inventory.remove(player, index, itemId) then
+		local entry = Inventory.remove(player, index, itemId)
+		if entry then
+			price *= entry.amount or 1 -- a stack (ammo) sells per round
 			Inventory.add(player, { id = "Money", amount = price })
 			notify(player, `Sold {Config.Items[itemId].name} for ${price}.`)
 		end

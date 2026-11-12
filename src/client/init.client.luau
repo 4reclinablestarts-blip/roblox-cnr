@@ -5,15 +5,18 @@ local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local StashUI = require(script.StashUI)
+require(script.Weapons)
 local Remotes = ReplicatedStorage.Remotes
 
 local player = Players.LocalPlayer
 
 -- Prompts with a ShowFor attribute only show for that team. Enabled set on the client stays local.
+-- Prompts on your own character (your revive prompt) never show for you.
 local function updatePrompt(prompt: Instance)
 	local showFor = prompt:GetAttribute("ShowFor")
 	if showFor and prompt:IsA("ProximityPrompt") then
-		prompt.Enabled = player.Team ~= nil and player.Team.Name == showFor
+		local own = player.Character ~= nil and prompt:IsDescendantOf(player.Character)
+		prompt.Enabled = not own and player.Team ~= nil and player.Team.Name == showFor
 	end
 end
 local function updatePrompts()
@@ -60,6 +63,12 @@ local function updateStatus()
 	end
 	if player:GetAttribute("Masked") then
 		text ..= " · Masked"
+	end
+	if player:GetAttribute("Wanted") then
+		text ..= " · WANTED"
+	end
+	if player:GetAttribute("Downed") then
+		text = `DOWNED · bleeding out in {player:GetAttribute("BleedOut") or 0}s`
 	end
 	status.Text = `{text} · ${player:GetAttribute("Cash") or 0}`
 	status.TextColor3 = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)

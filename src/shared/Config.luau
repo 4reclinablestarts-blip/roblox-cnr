@@ -12,7 +12,7 @@ return {
 
 	-- shortcut: loadouts are picked with one desk prompt each, upgrade to a picker UI when there are more than ~3.
 	PoliceLoadouts = {
-		{ name = "Patrol", items = { "PolicePistol", "PistolAmmo", "PistolAmmo", "Handcuffs", "Bandage" } },
+		{ name = "Patrol", items = { "PolicePistol", "PistolAmmo", "Handcuffs", "Bandage" } },
 		{ name = "Pursuit", items = { "PoliceShotgun", "ShotgunAmmo", "Handcuffs", "Bandage", "Bandage" } },
 	},
 
@@ -24,12 +24,24 @@ return {
 	SELL_BONUS_PER_LEVEL = 0.05, -- criminal level 5 sells for +25%
 	GIVE_RANGE = 10, -- studs between players to give an item
 
+	-- Combat. Damage is per hit (per pellet for shotguns); players have 100 HP.
+	Weapons = {
+		StarterPistol = { damage = 20, cooldown = 0.35, range = 250, ammo = "PistolAmmo" },
+		PolicePistol = { damage = 25, cooldown = 0.3, range = 300, ammo = "PistolAmmo" },
+		PoliceShotgun = { damage = 12, pellets = 6, spread = 4, cooldown = 0.9, range = 90, ammo = "ShotgunAmmo" },
+	},
+	BLEED_OUT = 45, -- seconds while downed; crawling drains it at 2x
+	DOWNED_SPEED = 4,
+	REVIVE_TIME = 5,
+	REVIVE_HEALTH = 30,
+	DEATH_BAG_LIFETIME = 300,
+
 	Items = {
 		StarterPistol = { name = "Starter Pistol", value = 0 },
 		PolicePistol = { name = "Police Pistol", value = 0 },
 		PoliceShotgun = { name = "Police Shotgun", value = 0 },
-		PistolAmmo = { name = "Pistol Ammo", value = 5 },
-		ShotgunAmmo = { name = "Shotgun Ammo", value = 8 },
+		PistolAmmo = { name = "Pistol Ammo", value = 1, stackable = true, defaultAmount = 36 },
+		ShotgunAmmo = { name = "Shotgun Ammo", value = 2, stackable = true, defaultAmount = 16 },
 		Handcuffs = { name = "Handcuffs", value = 0 },
 		Bandage = { name = "Bandage", value = 10 },
 		-- Real money: one stacking slot. Selling pays into it, registers drop it.

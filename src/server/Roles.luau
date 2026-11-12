@@ -27,6 +27,22 @@ function Roles.isPolice(player: Player): boolean
 	return player.Team == teams.Police
 end
 
+-- "Civilian", "Criminal" or "Police".
+function Roles.of(player: Player): string?
+	return player.Team and player.Team.Name
+end
+
+-- A fresh start for the next raid: civilian again, all per-raid state cleared.
+function Roles.reset(player: Player)
+	if player.Team == teams.Police then
+		Inventory.restore(player)
+	end
+	player.Team = teams.Civilian
+	for _, attribute in { "Masked", "WentOffDuty", "LootedItems", "CriminalLevel", "Wanted" } do
+		player:SetAttribute(attribute, nil)
+	end
+end
+
 local function goOnDuty(player: Player, loadout)
 	if player.Team ~= teams.Civilian then
 		notify(player, "Only civilians can join the police.")

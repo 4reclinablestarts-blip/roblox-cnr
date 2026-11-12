@@ -10,6 +10,7 @@ local Remotes = ReplicatedStorage.Remotes
 export type Entry = { id: string, amount: number? }
 
 local Inventory = {}
+Inventory.onChanged = nil :: ((Player) -> ())? -- set by Combat to keep weapon tools in sync
 
 local items: { [Player]: { Entry } } = {}
 local lockedAway: { [Player]: { Entry } } = {}
@@ -17,7 +18,7 @@ local lockedAway: { [Player]: { Entry } } = {}
 local function entries(ids: { string }): { Entry }
 	local list = {}
 	for _, id in ids do
-		table.insert(list, { id = id })
+		table.insert(list, { id = id, amount = Config.Items[id].defaultAmount })
 	end
 	return list
 end
@@ -31,6 +32,9 @@ local function sync(player: Player)
 	end
 	player:SetAttribute("Cash", cash) -- display only; the bag is the source of truth
 	Remotes.InventoryChanged:FireClient(player, items[player], Config.BAG_SLOTS)
+	if Inventory.onChanged then
+		Inventory.onChanged(player)
+	end
 end
 
 local function findStack(list: { Entry }, id: string): Entry?
@@ -74,6 +78,39 @@ function Inventory.remove(player: Player, index: number, itemId: string): Entry?
 	local entry = table.remove(list, index)
 	sync(player)
 	return entry
+end
+
+function Inventory.get(player: Player): { Entry }
+	return items[player] or {}
+end
+
+-- Uses up `amount` from a stack (ammo). Returns false if there isn't enough.
+function Inventory.consume(player: Player, itemId: string, amount: number): boolean
+	local list = items[player]
+	local stack = list and findStack(list, itemId)
+	if not stack or (stack.amount or 0) < amount then
+		return false
+	end
+	stack.amount -= amount
+	if stack.amount <= 0 then
+		table.remove(list, table.find(list, stack))
+	end
+	sync(player)
+	return true
+end
+
+-- Empties the bag and returns what was in it (death bags, confiscation).
+function Inventory.takeAll(player: Player): { Entry }
+	local list = items[player] or {}
+	items[player] = {}
+	sync(player)
+	return list
+end
+
+-- shortcut: "back to the hub with nothing" refills the starting items so testing can continue; drop once the hub sells gear.
+function Inventory.fresh(player: Player)
+	items[player] = entries(Config.STARTING_ITEMS)
+	sync(player)
 end
 
 -- Going on duty: the personal bag is put away and replaced by the police kit.
