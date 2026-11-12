@@ -64,7 +64,11 @@ local function setupDesk(desk: Instance)
 			goOnDuty(player, loadout)
 		end)
 		prompt:SetAttribute("ShowFor", "Civilian")
-		prompt.Parent = desk
+		-- Prompts on the same part draw on top of each other, so each loadout gets its own spot.
+		local spot = Instance.new("Attachment")
+		spot.Position = Vector3.new((i - (#Config.PoliceLoadouts + 1) / 2) * 4, 0, 0)
+		spot.Parent = desk
+		prompt.Parent = spot
 	end
 
 	local offDuty = Instance.new("ProximityPrompt")
