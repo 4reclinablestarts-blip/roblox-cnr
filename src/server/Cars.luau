@@ -207,12 +207,27 @@ function Cars.spawn(player: Player, carId: string, cframe: CFrame): Car?
 	return car
 end
 
+-- Puts the player in the driver's seat. Right after joining, a single Sit doesn't stick while the
+-- character is still loading in, so move them to the car and retry for a few seconds.
 function Cars.seat(player: Player, car: Car)
-	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	local seat = car.model:FindFirstChildOfClass("VehicleSeat")
-	if humanoid and seat then
-		seat:Sit(humanoid)
-	end
+	task.spawn(function()
+		for _ = 1, 20 do
+			local seat = car.model.Parent and car.model:FindFirstChildOfClass("VehicleSeat")
+			local character = player.Character
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if not seat or not player.Parent then
+				return
+			end
+			if humanoid and seat.Occupant == humanoid then
+				return
+			end
+			if humanoid and humanoid.Health > 0 and character:FindFirstChild("HumanoidRootPart") then
+				character:PivotTo(seat.CFrame + Vector3.new(0, 3, 0))
+				seat:Sit(humanoid)
+			end
+			task.wait(0.5)
+		end
+	end)
 end
 
 -- Called when the player leaves this place through the map. Their car goes with them if they're driving it.
