@@ -60,6 +60,8 @@ local function go(player: Player, destination: string, arg: any): boolean
 	return false
 end
 
+local travelling: { [Player]: boolean } = {}
+
 local function onTravel(player: Player, destination: any, arg: any)
 	local reason = player:GetAttribute("MapOpen")
 	if not reason or type(destination) ~= "string" then
@@ -74,9 +76,28 @@ local function onTravel(player: Player, destination: any, arg: any)
 	if reason == "raidEnd" and destination ~= "Motel" and destination ~= "Home" then
 		return
 	end
-	if not go(player, destination, arg) and not Places.canTeleport() then
+	-- One trip at a time: saving, matchmaking and teleporting take a few seconds, and
+	-- overlapping trips can send the player somewhere they didn't pick.
+	if travelling[player] then
+		return
+	end
+	travelling[player] = true
+	print(`[cnr] {player.Name} travels {reason} -> {destination} {arg or ""} (this server: {Places.kind})`)
+	-- Errors show on the player's screen so problems in the live game can be reported.
+	local ok, result = pcall(go, player, destination, arg)
+	-- After a successful teleport the player is leaving; keep the lock a while in case it still fails late.
+	task.delay(if ok and result then 15 else 0, function()
+		travelling[player] = nil
+		Remotes.TravelDone:FireClient(player)
+	end)
+	if not ok then
+		warn(`[cnr] travel error: {result}`)
+		Remotes.Notify:FireClient(player, `Travel error: {result}`)
+	elseif not result and not Places.canTeleport() then
 		Remotes.Notify:FireClient(player, "Travel only works in the published game. Staying here for testing.")
 		stay(player)
+	elseif not result then
+		Remotes.Notify:FireClient(player, `Couldn't travel to {destination}. Try again.`)
 	end
 end
 
@@ -91,6 +112,9 @@ function Travel.refresh(player: Player)
 end
 
 function Travel.start()
+	Players.PlayerRemoving:Connect(function(player)
+		travelling[player] = nil
+	end)
 	Remotes.Travel.OnServerEvent:Connect(onTravel)
 
 	-- Map borders in the Motel, Sales Center and neighbourhoods (the raid uses RaidBorder for extraction).

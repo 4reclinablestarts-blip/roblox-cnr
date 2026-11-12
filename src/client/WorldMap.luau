@@ -55,6 +55,8 @@ bottomLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 bottomLayout.Padding = UDim.new(0, 12)
 bottomLayout.Parent = bottom
 
+local busy = false
+
 local function tile(parent: Instance, text: string, color: Color3, enabled: boolean, onClick: () -> ()): TextButton
 	local button = Instance.new("TextButton")
 	button.Size = UDim2.fromOffset(170, 90)
@@ -88,8 +90,14 @@ local function render()
 	local canBuy = player:GetAttribute("HomeDeed") == true and not hasHome
 	local districtLevel = player:GetAttribute("DistrictLevel") or 1
 
+	-- One click per trip: lock the map until the server says the trip is done (or failed).
 	local function travel(destination: string, arg: string?)
 		return function()
+			if busy then
+				return
+			end
+			busy = true
+			title.Text = "TRAVELLING…"
 			Remotes.Travel:FireServer(destination, arg)
 		end
 	end
@@ -132,7 +140,14 @@ local function update()
 		render()
 	end
 end
-player.AttributeChanged:Connect(update)
+-- Only re-render for attributes the map shows; rebuilding the buttons mid-click swallows the click.
+for _, attribute in { "MapOpen", "HasHome", "HomeDeed", "DistrictLevel" } do
+	player:GetAttributeChangedSignal(attribute):Connect(update)
+end
+Remotes.TravelDone.OnClientEvent:Connect(function()
+	busy = false
+	title.Text = "ROCKY VALLEY"
+end)
 update()
 
 return {}

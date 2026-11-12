@@ -58,6 +58,7 @@ local function label(y: number, size: number): TextLabel
 	text.TextStrokeTransparency = 0.3
 	text.Font = Enum.Font.GothamBold
 	text.TextSize = size
+	text.Text = ""
 	text.Parent = gui
 	return text
 end

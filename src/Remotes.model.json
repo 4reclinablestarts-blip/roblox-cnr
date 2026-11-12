@@ -16,6 +16,7 @@
     { "Name": "InventoryChanged", "ClassName": "RemoteEvent" },
     { "Name": "Notify", "ClassName": "RemoteEvent" },
     { "Name": "Travel", "ClassName": "RemoteEvent" },
+    { "Name": "TravelDone", "ClassName": "RemoteEvent" },
     { "Name": "OpenShop", "ClassName": "RemoteEvent" },
     { "Name": "Buy", "ClassName": "RemoteEvent" },
     { "Name": "Garage", "ClassName": "RemoteEvent" },
