@@ -15,8 +15,14 @@ local Looting = {}
 
 local contents: { [BasePart]: { Inventory.Entry } } = {}
 
--- Stashes whose contents depend on who opens them: part -> function(player) returning that player's list.
-Looting.personalStashes = {} :: { [Instance]: (Player) -> { Inventory.Entry } }
+-- Stashes whose contents depend on who opens them (police stash, Motel stash, trunks, home stashes).
+-- items(player) returns the list that player may use (nil = no access); canPut allows storing items.
+export type PersonalStash = {
+	items: (Player) -> { Inventory.Entry }?,
+	capacity: number?,
+	canPut: ((Player) -> boolean)?,
+}
+Looting.personalStashes = {} :: { [Instance]: PersonalStash }
 local resetting: { [BasePart]: boolean } = {}
 
 local function roll(part: BasePart): { Inventory.Entry }
@@ -152,15 +158,16 @@ function Looting.start()
 		-- A personal stash (police station stash): taking from it isn't robbing.
 		local personal = Looting.personalStashes[part]
 		if personal then
-			local items = personal(player)
-			if Roles.isPolice(player) or not inRange(player, part) then
+			local items = personal.items(player)
+			if not items or not inRange(player, part) then
 				return
 			end
+			local canPut = personal.canPut ~= nil and personal.canPut(player)
 			if not items[index] or items[index].id ~= itemId then
-				Remotes.OpenStash:FireClient(player, part, items)
+				Remotes.OpenStash:FireClient(player, part, items, canPut)
 			elseif Inventory.add(player, items[index]) then
 				table.remove(items, index)
-				Remotes.OpenStash:FireClient(player, part, items)
+				Remotes.OpenStash:FireClient(player, part, items, canPut)
 			else
 				Remotes.Notify:FireClient(player, "Your bag is full.")
 			end

@@ -42,7 +42,73 @@ local function lootable(
 	CollectionService:AddTag(part, "Lootable")
 end
 
-return function()
+local function tagged(
+	folder: Instance,
+	name: string,
+	tag: string,
+	size: Vector3,
+	position: Vector3,
+	color: Color3
+): Part
+	local part = block(folder, name, size, position, color)
+	CollectionService:AddTag(part, tag)
+	return part
+end
+
+-- A see-through zone that opens the world map (or extracts, in the raid).
+local function border(folder: Instance, tag: string)
+	local part =
+		tagged(folder, "Map border", tag, Vector3.new(40, 12, 4), Vector3.new(0, 6, 80), Color3.fromRGB(60, 220, 120))
+	part.Transparency = 0.6
+	part.CanCollide = false
+end
+
+local function arrivals(folder: Instance)
+	for i, x in { -30, 30 } do
+		local part = tagged(
+			folder,
+			`Arrival {i}`,
+			"Arrival",
+			Vector3.new(8, 1, 14),
+			Vector3.new(x, 0.5, 60),
+			Color3.fromRGB(70, 70, 70)
+		)
+		part.CanCollide = false
+		part.Transparency = 0.5
+	end
+end
+
+local function hub(folder: Instance)
+	tagged(folder, "Stash", "HubStash", Vector3.new(4, 3, 3), Vector3.new(-20, 1.5, -10), Color3.fromRGB(90, 70, 50))
+	tagged(folder, "Tech tree shop", "Shop", Vector3.new(6, 4, 3), Vector3.new(0, 2, -20), Color3.fromRGB(200, 170, 60))
+	local garage = tagged(
+		folder,
+		"Garage",
+		"Garage",
+		Vector3.new(14, 0.4, 20),
+		Vector3.new(30, 0.2, 20),
+		Color3.fromRGB(60, 60, 60)
+	)
+	garage.CanCollide = false
+	border(folder, "MapBorder")
+end
+
+local function sales(folder: Instance)
+	for i, x in { -20, 0, 20 } do
+		tagged(
+			folder,
+			`Sell station {i}`,
+			"SellStation",
+			Vector3.new(5, 4, 3),
+			Vector3.new(x, 2, -25),
+			Color3.fromRGB(40, 150, 70)
+		)
+	end
+	arrivals(folder)
+	border(folder, "MapBorder")
+end
+
+return function(kind: string)
 	if workspace:FindFirstChild("Placeholder") then
 		return
 	end
@@ -55,6 +121,20 @@ return function()
 	spawn.Size = Vector3.new(8, 1, 8)
 	spawn.Position = Vector3.new(0, 0.5, 0)
 	spawn.Parent = folder
+
+	if kind ~= "Raid" then
+		if kind == "Hub" then
+			hub(folder)
+		elseif kind == "Sales" then
+			sales(folder)
+		else -- Housing builds its own plots
+			arrivals(folder)
+			border(folder, "MapBorder")
+		end
+		folder.Parent = workspace
+		return
+	end
+	arrivals(folder)
 
 	block(folder, "Store", Vector3.new(30, 1, 24), Vector3.new(40, 0.5, 0), Color3.fromRGB(90, 90, 110))
 	lootable(folder, "Register", "Register", 3, Vector3.new(4, 3, 2), Vector3.new(40, 2.5, -8))
@@ -98,17 +178,7 @@ return function()
 	clerk.Parent = folder
 	CollectionService:AddTag(clerk, "Witness")
 
-	-- Exit zone 80 studs north of the spawn.
-	local border = block(
-		folder,
-		"Map border (extract)",
-		Vector3.new(40, 12, 4),
-		Vector3.new(0, 6, 80),
-		Color3.fromRGB(60, 220, 120)
-	)
-	border.Transparency = 0.6
-	border.CanCollide = false
-	CollectionService:AddTag(border, "RaidBorder")
+	border(folder, "RaidBorder") -- extraction zone 80 studs north of the spawn
 
 	folder.Parent = workspace
 end

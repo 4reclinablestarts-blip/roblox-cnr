@@ -128,11 +128,15 @@ mechanics, tested on placeholder parts.
 Until the map exists, mechanics are tested on placeholder parts in a
 `Workspace.Placeholder` folder that the map session can delete.
 
-1. Looty Bay in Studio: roles, police desk (cap 5, off duty), mask up, lootables → stash UI → slot inventory, criminal level.
-2. Cash, sell stations, world items (TV, plant), give item.
-3. Combat rules, downed/surrender/arrest/confiscation, death bags, wanted, border exit, cameras/witnesses → police alerts (needs guns for hold-ups and shooting cameras).
-4. Motel hub: safe zone, stash, rental car, exit border → world map → matchmaking → teleport, 1-hour end.
-5. Parties + skill-based matchmaking.
-6. Tech tree shop, owned cars, car recall/lockpick.
-7. Housing: plots, home stash, security, raiding.
-8. Grid inventory with item sizes.
+All eight milestones have a first version in code (untested in a live server):
+
+1. Roles, police desk, mask up, lootables, criminal level.
+2. Cash, sell stations, world items, giving items.
+3. Combat, downed/revive, surrender/arrest, police stash, wanted, border, cameras, witnesses.
+4. Motel hub: stash, shop, garage, map border → world map → teleports; 1-hour raid end.
+5. Parties (Motel) + matchmaking by gear value, never back into a raid you left.
+6. Tech tree shop (placeholder contents), owned cars, trunks, lockpicking, recall.
+7. Housing: neighbourhoods of 8 plots, home stash, break-ins, alarms, offline raiding.
+8. Grid bag with item sizes (drag to move). Stashes are still simple lists.
+
+Still open: robbery tiers, player levels/XP, real tech tree contents, rent, home break-in items beyond the Crowbar.

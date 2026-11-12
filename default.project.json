@@ -11,17 +11,7 @@
         "$path": "src/shared"
       },
       "Remotes": {
-        "$className": "Folder",
-        "MaskUp": { "$className": "RemoteEvent" },
-        "TakeItem": { "$className": "RemoteEvent" },
-        "PutItem": { "$className": "RemoteEvent" },
-        "GiveItem": { "$className": "RemoteEvent" },
-        "Shoot": { "$className": "RemoteEvent" },
-        "Surrender": { "$className": "RemoteEvent" },
-        "ShotFired": { "$className": "RemoteEvent" },
-        "OpenStash": { "$className": "RemoteEvent" },
-        "InventoryChanged": { "$className": "RemoteEvent" },
-        "Notify": { "$className": "RemoteEvent" }
+        "$path": "src/Remotes.model.json"
       }
     },
 
@@ -45,39 +35,23 @@
     },
 
     "Workspace": {
-      "$properties": {
-        "FilteringEnabled": true
+      "$attributes": {
+        "PlaceKind": "Raid"
       },
       "Baseplate": {
         "$className": "Part",
         "$properties": {
           "Anchored": true,
-          "Color": [
-            0.38823,
-            0.37254,
-            0.38823
-          ],
+          "Color": [0.38823, 0.37254, 0.38823],
           "Locked": true,
-          "Position": [
-            0,
-            -10,
-            0
-          ],
-          "Size": [
-            512,
-            20,
-            512
-          ]
+          "Position": [0, -10, 0],
+          "Size": [512, 20, 512]
         }
       }
     },
     "Lighting": {
       "$properties": {
-        "Ambient": [
-          0,
-          0,
-          0
-        ],
+        "Ambient": [0, 0, 0],
         "Brightness": 2,
         "GlobalShadows": true,
         "Outlines": false,

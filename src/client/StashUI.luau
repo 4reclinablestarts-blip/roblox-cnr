@@ -1,5 +1,8 @@
--- Bag panel plus the open stash panel. Drag a stash item onto the bag to take it,
--- drag a bag item onto a sell station to sell it, right-click a bag item to give it away.
+-- The bag (a grid) plus the open stash panel.
+--   stash -> bag: drag onto the bag to take
+--   bag -> stash: drag onto the stash to store or sell (when allowed)
+--   bag -> bag: drag onto another cell to move
+--   right-click a bag item: use it (heals) or give it to a nearby player
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -7,25 +10,27 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Grid = require(ReplicatedStorage.Shared.Grid)
 local Remotes = ReplicatedStorage.Remotes
 
 local player = Players.LocalPlayer
+local CELL = 52
+
+type Entry = { id: string, amount: number?, x: number?, y: number? }
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Inventory"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function makePanel(anchorX: number, offsetX: number): (Frame, TextLabel, ScrollingFrame)
+local function panel(anchorX: number, offsetX: number): (Frame, TextLabel)
 	local frame = Instance.new("Frame")
 	frame.AnchorPoint = Vector2.new(anchorX, 0.5)
 	frame.Position = UDim2.new(0.5, offsetX, 0.5, 0)
-	frame.Size = UDim2.fromOffset(260, 360)
 	frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 	frame.BackgroundTransparency = 0.1
 	frame.Visible = false
 	frame.Parent = gui
-
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, 0, 0, 30)
 	title.BackgroundTransparency = 1
@@ -33,53 +38,55 @@ local function makePanel(anchorX: number, offsetX: number): (Frame, TextLabel, S
 	title.Font = Enum.Font.GothamBold
 	title.TextSize = 16
 	title.Parent = frame
-
-	local list = Instance.new("ScrollingFrame")
-	list.Position = UDim2.fromOffset(8, 34)
-	list.Size = UDim2.new(1, -16, 1, -42)
-	list.BackgroundTransparency = 1
-	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	list.CanvasSize = UDim2.new()
-	list.ScrollBarThickness = 4
-	list.Parent = frame
-	local layout = Instance.new("UIGridLayout")
-	layout.CellSize = UDim2.fromOffset(76, 40)
-	layout.CellPadding = UDim2.fromOffset(4, 4)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = list
-
-	return frame, title, list
+	return frame, title
 end
 
-local bagFrame, bagTitle, bagList = makePanel(1, -8)
-local stashFrame, stashTitle, stashList = makePanel(0, 8)
+local bagFrame, bagTitle = panel(1, -8)
+local bagGrid = Instance.new("Frame")
+bagGrid.Position = UDim2.fromOffset(8, 34)
+bagGrid.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+bagGrid.Parent = bagFrame
+
+local stashFrame, stashTitle = panel(0, 8)
+stashFrame.Size = UDim2.fromOffset(260, 360)
+local stashList = Instance.new("ScrollingFrame")
+stashList.Position = UDim2.fromOffset(8, 34)
+stashList.Size = UDim2.new(1, -16, 1, -42)
+stashList.BackgroundTransparency = 1
+stashList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+stashList.CanvasSize = UDim2.new()
+stashList.ScrollBarThickness = 4
+stashList.Parent = stashFrame
+local layout = Instance.new("UIGridLayout")
+layout.CellSize = UDim2.fromOffset(76, 44)
+layout.CellPadding = UDim2.fromOffset(4, 4)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = stashList
 
 local openStash: BasePart? = nil
+local stashCanPut = false
+local bagItems: { Entry } = {}
 
-local function itemButton(list: ScrollingFrame, index: number, entry: { id: string, amount: number? }): TextButton
-	local button = Instance.new("TextButton")
-	button.LayoutOrder = index
+local function label(entry: Entry): string
 	local item = Config.Items[entry.id]
 	if entry.amount then
-		button.Text = `{item.name}\n${entry.amount}`
-	else
-		button.Text = item.value > 0 and `{item.name}\n${item.value}` or item.name
+		local prefix = if entry.id == "Money" then "$" else "x"
+		return `{item.name}\n{prefix}{entry.amount}`
 	end
+	return item.value > 0 and `{item.name}\n${item.value}` or item.name
+end
+
+local function itemButton(parent: GuiObject, entry: Entry): TextButton
+	local button = Instance.new("TextButton")
+	button.Text = label(entry)
 	button.TextWrapped = true
 	button.TextSize = 12
 	button.TextColor3 = Color3.new(1, 1, 1)
-	button.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+	button.BackgroundColor3 = Color3.fromRGB(70, 70, 85)
+	button.BorderSizePixel = 1
 	button.AutoButtonColor = false
-	button.Parent = list
+	button.Parent = parent
 	return button
-end
-
-local function clear(list: ScrollingFrame)
-	for _, child in list:GetChildren() do
-		if child:IsA("GuiButton") then
-			child:Destroy()
-		end
-	end
 end
 
 local function isOver(frame: GuiObject, position: Vector2): boolean
@@ -90,9 +97,9 @@ local function isOver(frame: GuiObject, position: Vector2): boolean
 		and position.Y <= topLeft.Y + size.Y
 end
 
--- A copy of the button follows the pointer; dropping it on `target` calls onDrop.
+-- A copy of the button follows the pointer; onDrop gets where it was released.
 -- InputObject.Position and AbsolutePosition both exclude the top bar inset, so they compare directly.
-local function startDrag(button: TextButton, input: InputObject, target: GuiObject, onDrop: () -> ())
+local function startDrag(button: TextButton, input: InputObject, onDrop: (Vector2, Vector2) -> ())
 	local ghost = button:Clone()
 	ghost.AnchorPoint = Vector2.new(0.5, 0.5)
 	ghost.Size = UDim2.fromOffset(button.AbsoluteSize.X, button.AbsoluteSize.Y)
@@ -118,30 +125,26 @@ local function startDrag(button: TextButton, input: InputObject, target: GuiObje
 		end
 		moved:Disconnect()
 		ended:Disconnect()
+		-- The ghost's top-left cell is where the item lands when moving inside the bag.
+		local corner = ghost.AbsolutePosition
 		ghost:Destroy()
-		if isOver(target, Vector2.new(release.Position.X, release.Position.Y)) then
-			onDrop()
-		end
+		onDrop(Vector2.new(release.Position.X, release.Position.Y), corner)
 	end)
 end
 
-local giveMenu: Frame? = nil
+local function isPress(input: InputObject): boolean
+	return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
 
-local function closeGiveMenu()
-	if giveMenu then
-		giveMenu:Destroy()
-		giveMenu = nil
+local menu: Frame? = nil
+local function closeMenu()
+	if menu then
+		menu:Destroy()
+		menu = nil
 	end
 end
 
-local function closeStash()
-	openStash = nil
-	stashFrame.Visible = false
-	bagFrame.Visible = false
-	closeGiveMenu()
-end
-
-local function menuButton(menu: Frame, text: string, onClick: () -> ())
+local function menuButton(parent: Frame, text: string, onClick: () -> ())
 	local button = Instance.new("TextButton")
 	button.Size = UDim2.new(1, 0, 0, 28)
 	button.Text = text
@@ -149,93 +152,128 @@ local function menuButton(menu: Frame, text: string, onClick: () -> ())
 	button.TextColor3 = Color3.new(1, 1, 1)
 	button.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 	button.Activated:Connect(function()
-		closeGiveMenu()
+		closeMenu()
 		onClick()
 	end)
-	button.Parent = menu
+	button.Parent = parent
 end
 
--- shortcut: right-click only, so touch players can't give yet; add a long-press when mobile matters.
-local function openGiveMenu(button: TextButton, index: number, itemId: string)
-	closeGiveMenu()
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return
+-- shortcut: right-click only, so touch players can't use or give items yet; add a long-press when mobile matters.
+local function openMenu(button: TextButton, index: number, entry: Entry)
+	closeMenu()
+	local frame = Instance.new("Frame")
+	frame.Position = UDim2.fromOffset(button.AbsolutePosition.X + button.AbsoluteSize.X, button.AbsolutePosition.Y)
+	frame.Size = UDim2.fromOffset(170, 0)
+	frame.AutomaticSize = Enum.AutomaticSize.Y
+	frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	frame.ZIndex = 5
+	Instance.new("UIListLayout").Parent = frame
+
+	if Config.Heals[entry.id] then
+		menuButton(frame, "Use", function()
+			Remotes.UseItem:FireServer(index, entry.id)
+		end)
 	end
-
-	local menu = Instance.new("Frame")
-	menu.Position = UDim2.fromOffset(button.AbsolutePosition.X + button.AbsoluteSize.X, button.AbsolutePosition.Y)
-	menu.Size = UDim2.fromOffset(160, 0)
-	menu.AutomaticSize = Enum.AutomaticSize.Y
-	menu.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-	menu.ZIndex = 5
-	local layout = Instance.new("UIListLayout")
-	layout.Parent = menu
-
-	local found = false
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	for _, other in Players:GetPlayers() do
 		local otherRoot = other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart")
-		if otherRoot and (otherRoot.Position - root.Position).Magnitude <= Config.GIVE_RANGE then
-			found = true
-			menuButton(menu, `Give to {other.DisplayName}`, function()
-				Remotes.GiveItem:FireServer(other, index, itemId)
+		if root and otherRoot and (otherRoot.Position - root.Position).Magnitude <= Config.GIVE_RANGE then
+			menuButton(frame, `Give to {other.DisplayName}`, function()
+				Remotes.GiveItem:FireServer(other, index, entry.id)
 			end)
 		end
 	end
-	if not found then
-		menuButton(menu, "Nobody close enough", function() end)
-	end
-	menuButton(menu, "Cancel", function() end)
-
-	menu.Parent = gui
-	giveMenu = menu
+	menuButton(frame, "Cancel", function() end)
+	frame.Parent = gui
+	menu = frame
 end
 
-Remotes.InventoryChanged.OnClientEvent:Connect(function(items: { { id: string, amount: number? } }, slots: number)
-	clear(bagList)
-	closeGiveMenu()
-	bagTitle.Text = `Bag {#items}/{slots}`
-	for i, entry in items do
-		local itemId = entry.id
-		local button = itemButton(bagList, i, entry)
+local function renderBag(cols: number, rows: number)
+	for _, child in bagGrid:GetChildren() do
+		child:Destroy()
+	end
+	bagGrid.Size = UDim2.fromOffset(cols * CELL, rows * CELL)
+	bagFrame.Size = UDim2.fromOffset(cols * CELL + 16, rows * CELL + 42)
+	for x = 1, cols do -- faint cell lines
+		for y = 1, rows do
+			local cell = Instance.new("Frame")
+			cell.Position = UDim2.fromOffset((x - 1) * CELL, (y - 1) * CELL)
+			cell.Size = UDim2.fromOffset(CELL, CELL)
+			cell.BackgroundTransparency = 1
+			cell.BorderColor3 = Color3.fromRGB(60, 60, 70)
+			cell.BorderSizePixel = 1
+			cell.Parent = bagGrid
+		end
+	end
+
+	local used = 0
+	for i, entry in bagItems do
+		local w, h = Grid.size(entry.id)
+		used += w * h
+		local button = itemButton(bagGrid, entry)
+		button.Position = UDim2.fromOffset(((entry.x or 1) - 1) * CELL + 1, ((entry.y or 1) - 1) * CELL + 1)
+		button.Size = UDim2.fromOffset(w * CELL - 2, h * CELL - 2)
+		button.ZIndex = 2
 		button.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton2 then
-				openGiveMenu(button, i, itemId)
-			elseif
-				(
-					input.UserInputType == Enum.UserInputType.MouseButton1
-					or input.UserInputType == Enum.UserInputType.Touch
-				)
-				and openStash
-				and CollectionService:HasTag(openStash, "SellStation")
-			then
-				local station = openStash
-				startDrag(button, input, stashFrame, function()
-					Remotes.PutItem:FireServer(station, i, itemId)
+				openMenu(button, i, entry)
+			elseif isPress(input) then
+				startDrag(button, input, function(at: Vector2, corner: Vector2)
+					local stash = openStash
+					if stash and stashFrame.Visible and isOver(stashFrame, at) then
+						if stashCanPut then
+							Remotes.PutItem:FireServer(stash, i, entry.id)
+						end
+					elseif isOver(bagGrid, at) then
+						local offset = corner - bagGrid.AbsolutePosition
+						local x = math.floor(offset.X / CELL + 0.5) + 1
+						local y = math.floor(offset.Y / CELL + 0.5) + 1
+						if x ~= entry.x or y ~= entry.y then
+							Remotes.MoveItem:FireServer(i, entry.id, x, y)
+						end
+					end
 				end)
 			end
 		end)
 	end
+	bagTitle.Text = `Bag ({used}/{cols * rows} cells)`
+end
+
+local function closeStash()
+	openStash = nil
+	stashFrame.Visible = false
+	bagFrame.Visible = false
+	closeMenu()
+end
+
+Remotes.InventoryChanged.OnClientEvent:Connect(function(items: { Entry }, cols: number, rows: number)
+	bagItems = items
+	closeMenu()
+	renderBag(cols, rows)
 end)
 
-Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { { id: string, amount: number? } })
+Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { Entry }, canPut: boolean?)
 	openStash = part
-	clear(stashList)
+	stashCanPut = canPut == true
+	for _, child in stashList:GetChildren() do
+		if child:IsA("GuiButton") then
+			child:Destroy()
+		end
+	end
 	if CollectionService:HasTag(part, "SellStation") then
 		stashTitle.Text = "Drag items here to sell"
 	else
-		stashTitle.Text = #items > 0 and part.Name or `{part.Name} (empty)`
+		stashTitle.Text = `{part.Name} ({#items})` .. (if stashCanPut then " · drag items in to store" else "")
 	end
 	for i, entry in items do
-		local itemId = entry.id
-		local button = itemButton(stashList, i, entry)
+		local button = itemButton(stashList, entry)
+		button.LayoutOrder = i
 		button.InputBegan:Connect(function(input)
-			if
-				input.UserInputType == Enum.UserInputType.MouseButton1
-				or input.UserInputType == Enum.UserInputType.Touch
-			then
-				startDrag(button, input, bagFrame, function()
-					Remotes.TakeItem:FireServer(part, i, itemId)
+			if isPress(input) then
+				startDrag(button, input, function(at: Vector2)
+					if isOver(bagFrame, at) then
+						Remotes.TakeItem:FireServer(part, i, entry.id)
+					end
 				end)
 			end
 		end)
@@ -261,6 +299,7 @@ return {
 			closeStash()
 		else
 			bagFrame.Visible = not bagFrame.Visible
+			closeMenu()
 		end
 	end,
 }

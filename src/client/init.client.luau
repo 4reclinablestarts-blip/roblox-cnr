@@ -1,23 +1,37 @@
--- Status bar, notifications, wanted markers and keybinds. M = mask up, B = bag, H = surrender.
+-- Status bar, notifications, wanted markers and keybinds.
+-- M = mask up, B = bag, H = surrender, P = party (Motel).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local StashUI = require(script.StashUI)
+local Menus = require(script.Menus)
 require(script.Weapons)
 require(script.Alerts)
+require(script.WorldMap)
+require(script.Driving)
 local Remotes = ReplicatedStorage.Remotes
 
 local player = Players.LocalPlayer
 
--- Prompts with a ShowFor attribute only show for that team. Enabled set on the client stays local.
+-- Prompts can be limited to one team (ShowFor), one player (ShowForUserId) or everyone but one
+-- player (HideForUserId). Enabled set on the client stays local.
 -- Prompts on your own character (your revive prompt) never show for you.
 local function updatePrompt(prompt: Instance)
+	if not prompt:IsA("ProximityPrompt") then
+		return
+	end
 	local showFor = prompt:GetAttribute("ShowFor")
-	if showFor and prompt:IsA("ProximityPrompt") then
+	local onlyFor = prompt:GetAttribute("ShowForUserId")
+	local hideFor = prompt:GetAttribute("HideForUserId")
+	if showFor then
 		local own = player.Character ~= nil and prompt:IsDescendantOf(player.Character)
 		prompt.Enabled = not own and player.Team ~= nil and player.Team.Name == showFor
+	elseif onlyFor then
+		prompt.Enabled = onlyFor == player.UserId
+	elseif hideFor then
+		prompt.Enabled = hideFor ~= player.UserId
 	end
 end
 local function updatePrompts()
@@ -52,7 +66,8 @@ local status = label(8, 20)
 local notice = label(36, 16)
 
 local function updateStatus()
-	local team = player.Team and player.Team.Name or "Lobby"
+	local placeNames = { Hub = "Motel", Sales = "Sales Center", Housing = "Neighbourhood" }
+	local team = player.Team and player.Team.Name or placeNames[workspace:GetAttribute("PlaceKind")] or "Lobby"
 	local text = team
 	if team == "Criminal" then
 		local level = player:GetAttribute("CriminalLevel") or 0
@@ -104,6 +119,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		StashUI.toggleBag()
 	elseif input.KeyCode == Enum.KeyCode.H then
 		Remotes.Surrender:FireServer()
+	elseif input.KeyCode == Enum.KeyCode.P then
+		Menus.toggleParty()
 	end
 end)
 

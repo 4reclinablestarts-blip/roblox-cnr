@@ -8,6 +8,7 @@ local StarterPlayer = game:GetService("StarterPlayer")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Inventory = require(script.Parent.Inventory)
 local Detection = require(script.Parent.Detection)
+local Places = require(script.Parent.Places)
 local Looting = require(script.Parent.Looting)
 local Raid = require(script.Parent.Raid)
 local Roles = require(script.Parent.Roles)
@@ -24,12 +25,23 @@ local function humanoidOf(player: Player): Humanoid?
 end
 
 -- Civilians never fight. Cops only hurt criminals. Criminals hurt anyone.
--- shortcut: parties don't exist yet, so there is no party friendly-fire check.
 function Combat.canHurt(attackerRole: string?, victimRole: string?): boolean
 	if attackerRole == "Police" then
 		return victimRole == "Criminal"
 	end
 	return attackerRole == "Criminal"
+end
+
+-- No friendly fire inside a party. Outside the raid (Sales Center, neighbourhoods) it's free-for-all.
+function Combat.allowed(attacker: Player, victim: Player): boolean
+	local party = attacker:GetAttribute("PartyId")
+	if party and party == victim:GetAttribute("PartyId") then
+		return false
+	end
+	if Places.kind ~= "Raid" then
+		return true
+	end
+	return Combat.canHurt(Roles.of(attacker), Roles.of(victim))
 end
 
 function Combat.refreshTools(player: Player)
@@ -40,7 +52,8 @@ function Combat.refreshTools(player: Player)
 	end
 	local want = {}
 	if
-		Roles.of(player) ~= "Civilian"
+		Places.kind ~= "Hub"
+		and Roles.of(player) ~= "Civilian"
 		and not player:GetAttribute("Downed")
 		and not player:GetAttribute("Surrendered")
 	then
@@ -205,7 +218,7 @@ local function onShoot(player: Player, target: Vector3)
 		local victim = model and Players:GetPlayerFromCharacter(model)
 		if result and not victim then
 			Detection.onHit(player, result.Instance, weapon.damage)
-		elseif victim and Combat.canHurt(Roles.of(player), Roles.of(victim)) then
+		elseif victim and Combat.allowed(player, victim) then
 			Combat.damage(victim, player, weapon.damage)
 		end
 	end

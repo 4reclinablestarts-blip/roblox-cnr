@@ -7,19 +7,17 @@ local Combat = require(script.Parent.Combat)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Inventory = require(script.Parent.Inventory)
 local Looting = require(script.Parent.Looting)
+local PlayerData = require(script.Parent.PlayerData)
 local Raid = require(script.Parent.Raid)
 local Roles = require(script.Parent.Roles)
 local Remotes = ReplicatedStorage.Remotes
 
 local Justice = {}
 
--- A cop's share of arrests, collected at the police desk once off duty. Kept between raids.
--- shortcut: in memory only; moves to DataStore with the rest of player data.
-local policeStash: { [Player]: { Inventory.Entry } } = {}
-
+-- A cop's share of arrests, collected at the police desk once off duty. Saved between raids.
 local function stashOf(player: Player): { Inventory.Entry }
-	policeStash[player] = policeStash[player] or {}
-	return policeStash[player]
+	local data = PlayerData.get(player)
+	return data and data.policeStash or {}
 end
 
 local function addToStash(cop: Player, entry: Inventory.Entry)
@@ -33,19 +31,6 @@ local function addToStash(cop: Player, entry: Inventory.Entry)
 		end
 	end
 	table.insert(stash, entry)
-end
-
--- What a bag is worth in cash: item values times stack size, plus any cash in it.
-function Justice.value(items: { Inventory.Entry }): number
-	local total = 0
-	for _, entry in items do
-		if entry.id == "Money" then
-			total += entry.amount or 0
-		else
-			total += Config.Items[entry.id].value * (entry.amount or 1)
-		end
-	end
-	return total
 end
 
 local function arrest(cop: Player, criminal: Player)
@@ -68,7 +53,7 @@ local function arrest(cop: Player, criminal: Player)
 			itemCount += 1
 		end
 	end
-	local cash = math.floor(Justice.value(items) * Config.ARREST_CASH_SHARE)
+	local cash = math.floor(Inventory.value(items) * Config.ARREST_CASH_SHARE)
 	if criminal:GetAttribute("Wanted") then
 		cash += Config.WANTED_BOUNTY
 	end
@@ -129,7 +114,12 @@ local function surrender(player: Player)
 end
 
 local function setupDesk(desk: BasePart)
-	Looting.personalStashes[desk] = stashOf
+	-- Off duty only: the share is paid out once the shift is over.
+	Looting.personalStashes[desk] = {
+		items = function(player: Player)
+			return if Roles.isPolice(player) then nil else stashOf(player)
+		end,
+	}
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Police station stash"
@@ -139,7 +129,7 @@ local function setupDesk(desk: BasePart)
 	prompt:SetAttribute("ShowFor", "Civilian")
 	prompt.Triggered:Connect(function(player)
 		if Looting.inRange(player, desk) then
-			Remotes.OpenStash:FireClient(player, desk, stashOf(player))
+			Remotes.OpenStash:FireClient(player, desk, stashOf(player), false)
 		end
 	end)
 	local spot = Instance.new("Attachment")
@@ -163,10 +153,6 @@ function Justice.start()
 	for _, player in Players:GetPlayers() do
 		onJoin(player)
 	end
-	Players.PlayerRemoving:Connect(function(player)
-		policeStash[player] = nil
-	end)
-
 	Remotes.Surrender.OnServerEvent:Connect(surrender)
 
 	CollectionService:GetInstanceAddedSignal("PoliceDesk"):Connect(setupDesk)
@@ -176,7 +162,7 @@ function Justice.start()
 end
 
 assert(
-	Justice.value({ { id = "Watch" }, { id = "Money", amount = 50 }, { id = "PistolAmmo", amount = 10 } }) == 140,
+	Inventory.value({ { id = "Watch" }, { id = "Money", amount = 50 }, { id = "PistolAmmo", amount = 10 } }) == 140,
 	"bag value"
 )
 

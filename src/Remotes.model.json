@@ -1,0 +1,25 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    { "Name": "MaskUp", "ClassName": "RemoteEvent" },
+    { "Name": "TakeItem", "ClassName": "RemoteEvent" },
+    { "Name": "PutItem", "ClassName": "RemoteEvent" },
+    { "Name": "MoveItem", "ClassName": "RemoteEvent" },
+    { "Name": "UseItem", "ClassName": "RemoteEvent" },
+    { "Name": "GiveItem", "ClassName": "RemoteEvent" },
+    { "Name": "Shoot", "ClassName": "RemoteEvent" },
+    { "Name": "Surrender", "ClassName": "RemoteEvent" },
+    { "Name": "AimAt", "ClassName": "RemoteEvent" },
+    { "Name": "PoliceAlert", "ClassName": "RemoteEvent" },
+    { "Name": "ShotFired", "ClassName": "RemoteEvent" },
+    { "Name": "OpenStash", "ClassName": "RemoteEvent" },
+    { "Name": "InventoryChanged", "ClassName": "RemoteEvent" },
+    { "Name": "Notify", "ClassName": "RemoteEvent" },
+    { "Name": "Travel", "ClassName": "RemoteEvent" },
+    { "Name": "OpenShop", "ClassName": "RemoteEvent" },
+    { "Name": "Buy", "ClassName": "RemoteEvent" },
+    { "Name": "Garage", "ClassName": "RemoteEvent" },
+    { "Name": "Party", "ClassName": "RemoteEvent" },
+    { "Name": "PartyChanged", "ClassName": "RemoteEvent" }
+  ]
+}
