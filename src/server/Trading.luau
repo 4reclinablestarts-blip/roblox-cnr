@@ -68,8 +68,9 @@ function Trading.start()
 			notify(player, `Nobody buys a {Config.Items[itemId].name} here.`)
 			return
 		end
+		-- Selling frees the item's slot, so the cash always fits.
 		if Inventory.remove(player, index, itemId) then
-			player:SetAttribute("Cash", (player:GetAttribute("Cash") or 0) + price)
+			Inventory.add(player, { id = "Money", amount = price })
 			notify(player, `Sold {Config.Items[itemId].name} for ${price}.`)
 		end
 	end)
@@ -90,10 +91,14 @@ function Trading.start()
 			notify(player, "Cops can't trade items.")
 		elseif distance(player, target) > Config.GIVE_RANGE then
 			notify(player, `{target.DisplayName} is too far away.`)
-		elseif not Inventory.hasRoom(target) then
+		elseif not Inventory.canAdd(target, { id = itemId }) then
 			notify(player, `{target.DisplayName}'s bag is full.`)
-		elseif Inventory.remove(player, index, itemId) then
-			Inventory.add(target, itemId)
+		else
+			local entry = Inventory.remove(player, index, itemId)
+			if not entry then
+				return
+			end
+			Inventory.add(target, entry)
 			notify(player, `Gave {Config.Items[itemId].name} to {target.DisplayName}.`)
 			notify(target, `{player.DisplayName} gave you a {Config.Items[itemId].name}.`)
 		end

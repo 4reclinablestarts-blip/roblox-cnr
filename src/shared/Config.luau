@@ -32,7 +32,8 @@ return {
 		ShotgunAmmo = { name = "Shotgun Ammo", value = 8 },
 		Handcuffs = { name = "Handcuffs", value = 0 },
 		Bandage = { name = "Bandage", value = 10 },
-		Cash = { name = "Cash Stack", value = 50 },
+		-- Real money: one stacking slot. Selling pays into it, registers drop it.
+		Money = { name = "Cash", value = 0, stackable = true, lootAmount = { 20, 80 } },
 		Watch = { name = "Watch", value = 80 },
 		Phone = { name = "Phone", value = 120 },
 		Snacks = { name = "Snacks", value = 5 },
@@ -43,7 +44,7 @@ return {
 
 	-- Each lootable rolls `count` picks from `items` when it fills.
 	LootTables = {
-		Register = { count = { 2, 4 }, items = { "Cash", "Cash", "Cash", "Cigarettes" } },
+		Register = { count = { 2, 4 }, items = { "Money", "Money", "Money", "Cigarettes" } },
 		Shelf = { count = { 3, 6 }, items = { "Snacks", "Snacks", "Cigarettes", "Phone", "Watch" } },
 	},
 }

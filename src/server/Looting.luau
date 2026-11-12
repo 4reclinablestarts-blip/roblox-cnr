@@ -12,14 +12,16 @@ local Remotes = ReplicatedStorage.Remotes
 
 local Looting = {}
 
-local contents: { [BasePart]: { string } } = {}
+local contents: { [BasePart]: { Inventory.Entry } } = {}
 local resetting: { [BasePart]: boolean } = {}
 
-local function roll(part: BasePart): { string }
+local function roll(part: BasePart): { Inventory.Entry }
 	local lootTable = Config.LootTables[part:GetAttribute("LootTable")]
 	local out = {}
 	for _ = 1, math.random(lootTable.count[1], lootTable.count[2]) do
-		table.insert(out, lootTable.items[math.random(#lootTable.items)])
+		local id = lootTable.items[math.random(#lootTable.items)]
+		local range = Config.Items[id].lootAmount
+		table.insert(out, { id = id, amount = range and math.random(range[1], range[2]) })
 	end
 	return out
 end
@@ -84,7 +86,7 @@ local function setupWorldItem(part: BasePart)
 		if not canRob(player) or not inRange(player, part) or part.Parent == ServerStorage then
 			return
 		end
-		if not Inventory.add(player, itemId) then
+		if not Inventory.add(player, { id = itemId }) then
 			Remotes.Notify:FireClient(player, "Your bag is full.")
 			return
 		end
@@ -119,12 +121,12 @@ function Looting.start()
 		if not canRob(player) or not inRange(player, part) then
 			return
 		end
-		if items[index] ~= itemId then
+		if not items[index] or items[index].id ~= itemId then
 			-- Someone else took it first; send the current contents.
 			Remotes.OpenStash:FireClient(player, part, items)
 			return
 		end
-		if not Inventory.add(player, itemId) then
+		if not Inventory.add(player, items[index]) then
 			Remotes.Notify:FireClient(player, "Your bag is full.")
 			return
 		end

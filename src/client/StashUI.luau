@@ -56,11 +56,15 @@ local stashFrame, stashTitle, stashList = makePanel(0, 8)
 
 local openStash: BasePart? = nil
 
-local function itemButton(list: ScrollingFrame, index: number, itemId: string): TextButton
+local function itemButton(list: ScrollingFrame, index: number, entry: { id: string, amount: number? }): TextButton
 	local button = Instance.new("TextButton")
 	button.LayoutOrder = index
-	local item = Config.Items[itemId]
-	button.Text = item and (item.value > 0 and `{item.name}\n${item.value}` or item.name) or itemId
+	local item = Config.Items[entry.id]
+	if entry.amount then
+		button.Text = `{item.name}\n${entry.amount}`
+	else
+		button.Text = item.value > 0 and `{item.name}\n${item.value}` or item.name
+	end
 	button.TextWrapped = true
 	button.TextSize = 12
 	button.TextColor3 = Color3.new(1, 1, 1)
@@ -187,12 +191,13 @@ local function openGiveMenu(button: TextButton, index: number, itemId: string)
 	giveMenu = menu
 end
 
-Remotes.InventoryChanged.OnClientEvent:Connect(function(items: { string }, slots: number)
+Remotes.InventoryChanged.OnClientEvent:Connect(function(items: { { id: string, amount: number? } }, slots: number)
 	clear(bagList)
 	closeGiveMenu()
 	bagTitle.Text = `Bag {#items}/{slots}`
-	for i, itemId in items do
-		local button = itemButton(bagList, i, itemId)
+	for i, entry in items do
+		local itemId = entry.id
+		local button = itemButton(bagList, i, entry)
 		button.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton2 then
 				openGiveMenu(button, i, itemId)
@@ -213,7 +218,7 @@ Remotes.InventoryChanged.OnClientEvent:Connect(function(items: { string }, slots
 	end
 end)
 
-Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { string })
+Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { { id: string, amount: number? } })
 	openStash = part
 	clear(stashList)
 	if CollectionService:HasTag(part, "SellStation") then
@@ -221,8 +226,9 @@ Remotes.OpenStash.OnClientEvent:Connect(function(part: BasePart, items: { string
 	else
 		stashTitle.Text = #items > 0 and part.Name or `{part.Name} (empty)`
 	end
-	for i, itemId in items do
-		local button = itemButton(stashList, i, itemId)
+	for i, entry in items do
+		local itemId = entry.id
+		local button = itemButton(stashList, i, entry)
 		button.InputBegan:Connect(function(input)
 			if
 				input.UserInputType == Enum.UserInputType.MouseButton1
