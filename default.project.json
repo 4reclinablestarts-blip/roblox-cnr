@@ -17,6 +17,7 @@
         "PutItem": { "$className": "RemoteEvent" },
         "GiveItem": { "$className": "RemoteEvent" },
         "Shoot": { "$className": "RemoteEvent" },
+        "Surrender": { "$className": "RemoteEvent" },
         "ShotFired": { "$className": "RemoteEvent" },
         "OpenStash": { "$className": "RemoteEvent" },
         "InventoryChanged": { "$className": "RemoteEvent" },

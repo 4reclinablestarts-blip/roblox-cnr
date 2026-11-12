@@ -36,6 +36,13 @@ return {
 	REVIVE_HEALTH = 30,
 	DEATH_BAG_LIFETIME = 300,
 
+	-- Arrests. The cop gets each confiscated item with this chance, plus cash = value share (+ bounty if wanted).
+	ARREST_TIME = 2,
+	ARREST_ITEM_SHARE = 0.2,
+	ARREST_ITEM_SHARE_MAX_LEVEL = 0.3, -- arresting a level-5 criminal
+	ARREST_CASH_SHARE = 0.1,
+	WANTED_BOUNTY = 500,
+
 	Items = {
 		StarterPistol = { name = "Starter Pistol", value = 0 },
 		PolicePistol = { name = "Police Pistol", value = 0 },

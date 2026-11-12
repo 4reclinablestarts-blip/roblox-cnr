@@ -1,4 +1,4 @@
--- Status bar, notifications and keybinds. M = mask up, B = bag.
+-- Status bar, notifications, wanted markers and keybinds. M = mask up, B = bag, H = surrender.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -67,6 +67,9 @@ local function updateStatus()
 	if player:GetAttribute("Wanted") then
 		text ..= " · WANTED"
 	end
+	if player:GetAttribute("Surrendered") then
+		text ..= " · Hands up"
+	end
 	if player:GetAttribute("Downed") then
 		text = `DOWNED · bleeding out in {player:GetAttribute("BleedOut") or 0}s`
 	end
@@ -98,5 +101,65 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		Remotes.MaskUp:FireServer()
 	elseif input.KeyCode == Enum.KeyCode.B then
 		StashUI.toggleBag()
+	elseif input.KeyCode == Enum.KeyCode.H then
+		Remotes.Surrender:FireServer()
 	end
 end)
+
+-- Wanted criminals get a marker everyone can see through walls (stand-in for the map until it exists).
+local markers = Instance.new("Folder")
+markers.Name = "WantedMarkers"
+markers.Parent = gui
+
+local function updateMarker(other: Player)
+	local existing = markers:FindFirstChild(other.Name)
+	local head = other.Character and other.Character:FindFirstChild("Head")
+	if not other:GetAttribute("Wanted") or not head then
+		if existing then
+			existing:Destroy()
+		end
+		return
+	end
+	local billboard = existing or Instance.new("BillboardGui")
+	billboard.Name = other.Name
+	billboard.Adornee = head
+	billboard.AlwaysOnTop = true
+	billboard.Size = UDim2.fromOffset(120, 24)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	if not existing then
+		local text = Instance.new("TextLabel")
+		text.Size = UDim2.fromScale(1, 1)
+		text.BackgroundTransparency = 1
+		text.Text = `WANTED: {other.DisplayName}`
+		text.TextColor3 = Color3.fromRGB(255, 60, 60)
+		text.TextStrokeTransparency = 0
+		text.Font = Enum.Font.GothamBold
+		text.TextScaled = true
+		text.Parent = billboard
+		billboard.Parent = markers
+	end
+end
+
+local function watch(other: Player)
+	if other == player then
+		return
+	end
+	other:GetAttributeChangedSignal("Wanted"):Connect(function()
+		updateMarker(other)
+	end)
+	other.CharacterAdded:Connect(function(character)
+		character:WaitForChild("Head")
+		updateMarker(other)
+	end)
+	updateMarker(other)
+end
+Players.PlayerAdded:Connect(watch)
+Players.PlayerRemoving:Connect(function(other)
+	local marker = markers:FindFirstChild(other.Name)
+	if marker then
+		marker:Destroy()
+	end
+end)
+for _, other in Players:GetPlayers() do
+	watch(other)
+end

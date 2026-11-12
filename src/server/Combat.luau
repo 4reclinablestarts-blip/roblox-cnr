@@ -38,7 +38,11 @@ function Combat.refreshTools(player: Player)
 		return
 	end
 	local want = {}
-	if Roles.of(player) ~= "Civilian" and not player:GetAttribute("Downed") then
+	if
+		Roles.of(player) ~= "Civilian"
+		and not player:GetAttribute("Downed")
+		and not player:GetAttribute("Surrendered")
+	then
 		for _, entry in Inventory.get(player) do
 			if Config.Weapons[entry.id] then
 				want[entry.id] = true
@@ -65,6 +69,13 @@ function Combat.refreshTools(player: Player)
 		tool:SetAttribute("ItemId", id)
 		tool.Parent = backpack
 	end
+end
+
+-- Stops the bleed-out timer, e.g. before an arrested player is respawned.
+function Combat.clearDowned(player: Player)
+	bleedLeft[player] = nil
+	player:SetAttribute("Downed", nil)
+	player:SetAttribute("BleedOut", nil)
 end
 
 local function revive(player: Player)

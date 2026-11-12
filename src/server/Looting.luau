@@ -13,6 +13,9 @@ local Remotes = ReplicatedStorage.Remotes
 local Looting = {}
 
 local contents: { [BasePart]: { Inventory.Entry } } = {}
+
+-- Stashes whose contents depend on who opens them: part -> function(player) returning that player's list.
+Looting.personalStashes = {} :: { [Instance]: (Player) -> { Inventory.Entry } }
 local resetting: { [BasePart]: boolean } = {}
 
 local function roll(part: BasePart): { Inventory.Entry }
@@ -140,7 +143,27 @@ function Looting.start()
 
 	Remotes.TakeItem.OnServerEvent:Connect(function(player, part, index, itemId)
 		-- Client input: check every argument before using it.
-		if typeof(part) ~= "Instance" or not contents[part] or type(index) ~= "number" then
+		if typeof(part) ~= "Instance" or type(index) ~= "number" then
+			return
+		end
+		-- A personal stash (police station stash): taking from it isn't robbing.
+		local personal = Looting.personalStashes[part]
+		if personal then
+			local items = personal(player)
+			if Roles.isPolice(player) or not inRange(player, part) then
+				return
+			end
+			if not items[index] or items[index].id ~= itemId then
+				Remotes.OpenStash:FireClient(player, part, items)
+			elseif Inventory.add(player, items[index]) then
+				table.remove(items, index)
+				Remotes.OpenStash:FireClient(player, part, items)
+			else
+				Remotes.Notify:FireClient(player, "Your bag is full.")
+			end
+			return
+		end
+		if not contents[part] then
 			return
 		end
 		local items = contents[part]

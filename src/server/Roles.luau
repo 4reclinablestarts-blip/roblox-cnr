@@ -38,7 +38,7 @@ function Roles.reset(player: Player)
 		Inventory.restore(player)
 	end
 	player.Team = teams.Civilian
-	for _, attribute in { "Masked", "WentOffDuty", "LootedItems", "CriminalLevel", "Wanted" } do
+	for _, attribute in { "Masked", "WentOffDuty", "LootedItems", "CriminalLevel", "Wanted", "Surrendered" } do
 		player:SetAttribute(attribute, nil)
 	end
 end

@@ -15,6 +15,11 @@ function Raid.leave(player: Player, reason: string, keepItems: boolean)
 	if not keepItems then
 		Inventory.fresh(player)
 	end
+	-- Dead players respawn on their own; living ones (arrested, extracted) are taken out now.
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if humanoid and humanoid.Health > 0 then
+		player:LoadCharacter()
+	end
 	Remotes.Notify:FireClient(player, `{reason} You'd be back at the Motel now (hub not built yet).`)
 end
 
