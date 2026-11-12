@@ -1,7 +1,9 @@
 -- Fires the equipped gun at the mouse, and draws every shot's tracer.
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Remotes = ReplicatedStorage.Remotes
 
@@ -37,6 +39,22 @@ local backpack = player:FindFirstChildOfClass("Backpack")
 if backpack then
 	watchBackpack(backpack)
 end
+
+-- Holding up witnesses: while a gun is out and the mouse is on a witness, tell the server.
+local lastAimReport = 0
+RunService.Heartbeat:Connect(function()
+	local now = os.clock()
+	if now - lastAimReport < 0.5 then
+		return
+	end
+	local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+	local target = mouse.Target
+	local model = target and target:FindFirstAncestorOfClass("Model")
+	if tool and model and CollectionService:HasTag(model, "Witness") then
+		lastAimReport = now
+		Remotes.AimAt:FireServer(model)
+	end
+end)
 
 Remotes.ShotFired.OnClientEvent:Connect(function(from: Vector3, to: Vector3)
 	local tracer = Instance.new("Part")

@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local StashUI = require(script.StashUI)
 require(script.Weapons)
+require(script.Alerts)
 local Remotes = ReplicatedStorage.Remotes
 
 local player = Players.LocalPlayer

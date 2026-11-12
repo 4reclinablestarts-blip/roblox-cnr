@@ -79,5 +79,36 @@ return function()
 		CollectionService:AddTag(part, "WorldItem")
 	end
 
+	-- Camera in the store's corner, looking at the register.
+	local camera = block(folder, "Camera", Vector3.new(1, 1, 2), Vector3.new(53, 8, -11), Color3.fromRGB(30, 30, 30))
+	camera.CFrame = CFrame.lookAt(camera.Position, Vector3.new(40, 2.5, -8))
+	CollectionService:AddTag(camera, "SecurityCamera")
+
+	-- Clerk behind the register: a witness.
+	local clerk = Instance.new("Model")
+	clerk.Name = "Clerk"
+	local root =
+		block(clerk, "HumanoidRootPart", Vector3.new(2, 2, 1), Vector3.new(40, 2, -11), Color3.fromRGB(80, 120, 200))
+	root.Transparency = 0
+	local head = block(clerk, "Head", Vector3.new(1, 1, 1), Vector3.new(40, 3.5, -11), Color3.fromRGB(240, 200, 160))
+	head:ClearAllChildren() -- no label on the head; the body's label says "HumanoidRootPart" otherwise
+	root:ClearAllChildren()
+	Instance.new("Humanoid").Parent = clerk
+	clerk.PrimaryPart = root
+	clerk.Parent = folder
+	CollectionService:AddTag(clerk, "Witness")
+
+	-- Exit zone 80 studs north of the spawn.
+	local border = block(
+		folder,
+		"Map border (extract)",
+		Vector3.new(40, 12, 4),
+		Vector3.new(0, 6, 80),
+		Color3.fromRGB(60, 220, 120)
+	)
+	border.Transparency = 0.6
+	border.CanCollide = false
+	CollectionService:AddTag(border, "RaidBorder")
+
 	folder.Parent = workspace
 end

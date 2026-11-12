@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Detection = require(script.Parent.Detection)
 local Inventory = require(script.Parent.Inventory)
 local Roles = require(script.Parent.Roles)
 local Remotes = ReplicatedStorage.Remotes
@@ -61,6 +62,7 @@ local function addSearchPrompt(part: BasePart)
 		end
 		-- Robbing unmasked makes you a criminal on the spot.
 		Roles.makeCriminal(player)
+		Detection.reportCrime(player)
 		Remotes.OpenStash:FireClient(player, part, contents[part])
 	end)
 	prompt.Parent = part
@@ -121,6 +123,7 @@ local function setupWorldItem(part: BasePart)
 		end
 		Roles.makeCriminal(player)
 		addCriminalProgress(player)
+		Detection.reportCrime(player)
 
 		local home = part.Parent
 		part.Parent = ServerStorage
@@ -181,6 +184,7 @@ function Looting.start()
 		end
 		table.remove(items, index)
 		addCriminalProgress(player)
+		Detection.reportCrime(player)
 		Remotes.OpenStash:FireClient(player, part, items)
 
 		if not resetting[part] then

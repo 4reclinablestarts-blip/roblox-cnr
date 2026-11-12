@@ -43,6 +43,18 @@ return {
 	ARREST_CASH_SHARE = 0.1,
 	WANTED_BOUNTY = 500,
 
+	-- Detection. Cameras and NPC witnesses alert the cops with a marker at their location.
+	CAMERA_RANGE = 60,
+	CAMERA_FOV = 70, -- degrees either side of where the camera points
+	CAMERA_HEALTH = 30,
+	CAMERA_REPAIR = 300, -- seconds until a shot-out camera works again
+	WITNESS_RANGE = 40,
+	WITNESS_HEALTH = 50,
+	WITNESS_PATIENCE = 20, -- seconds without a gun on them before they call
+	WITNESS_CALL_TIME = 5,
+	AIM_RANGE = 60, -- studs; holding up a witness from further away does nothing
+	ALERT_DURATION = 30,
+
 	Items = {
 		StarterPistol = { name = "Starter Pistol", value = 0 },
 		PolicePistol = { name = "Police Pistol", value = 0 },

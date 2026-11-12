@@ -7,6 +7,7 @@ local StarterPlayer = game:GetService("StarterPlayer")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Inventory = require(script.Parent.Inventory)
+local Detection = require(script.Parent.Detection)
 local Looting = require(script.Parent.Looting)
 local Raid = require(script.Parent.Raid)
 local Roles = require(script.Parent.Roles)
@@ -188,6 +189,7 @@ local function onShoot(player: Player, target: Vector3)
 		return
 	end
 	lastShot[player] = now
+	Detection.reportCrime(player) -- gunfire alarms cameras and witnesses
 
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
@@ -201,7 +203,9 @@ local function onShoot(player: Player, target: Vector3)
 
 		local model = result and result.Instance:FindFirstAncestorOfClass("Model")
 		local victim = model and Players:GetPlayerFromCharacter(model)
-		if victim and Combat.canHurt(Roles.of(player), Roles.of(victim)) then
+		if result and not victim then
+			Detection.onHit(player, result.Instance, weapon.damage)
+		elseif victim and Combat.canHurt(Roles.of(player), Roles.of(victim)) then
 			Combat.damage(victim, player, weapon.damage)
 		end
 	end
