@@ -63,6 +63,7 @@ local function setupDesk(desk: Instance)
 		prompt.Triggered:Connect(function(player)
 			goOnDuty(player, loadout)
 		end)
+		prompt:SetAttribute("ShowFor", "Civilian")
 		prompt.Parent = desk
 	end
 
@@ -72,6 +73,7 @@ local function setupDesk(desk: Instance)
 	offDuty.KeyboardKeyCode = Enum.KeyCode.F
 	offDuty.RequiresLineOfSight = false
 	offDuty.Triggered:Connect(goOffDuty)
+	offDuty:SetAttribute("ShowFor", "Police")
 	offDuty.Parent = desk
 end
 

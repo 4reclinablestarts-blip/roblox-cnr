@@ -9,6 +9,22 @@ local Remotes = ReplicatedStorage.Remotes
 
 local player = Players.LocalPlayer
 
+-- Prompts with a ShowFor attribute only show for that team. Enabled set on the client stays local.
+local function updatePrompt(prompt: Instance)
+	local showFor = prompt:GetAttribute("ShowFor")
+	if showFor and prompt:IsA("ProximityPrompt") then
+		prompt.Enabled = player.Team ~= nil and player.Team.Name == showFor
+	end
+end
+local function updatePrompts()
+	for _, prompt in workspace:GetDescendants() do
+		updatePrompt(prompt)
+	end
+end
+workspace.DescendantAdded:Connect(updatePrompt)
+player:GetPropertyChangedSignal("Team"):Connect(updatePrompts)
+updatePrompts()
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"
 gui.ResetOnSpawn = false
